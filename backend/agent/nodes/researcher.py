@@ -21,13 +21,15 @@ _SYSTEM = (
     "enough to give a thorough answer."
 )
 
+_MAX_ITERATIONS = 10
+
 
 def _research_one(sub_question: str) -> dict:
     logger.info("Researcher | sub-question: %s", sub_question)
     messages = [SystemMessage(content=_SYSTEM), HumanMessage(content=sub_question)]
     iteration = 0
 
-    while True:
+    while iteration < _MAX_ITERATIONS:
         iteration += 1
         response = _llm.invoke(messages)
         messages.append(response)
@@ -45,6 +47,10 @@ def _research_one(sub_question: str) -> dict:
             snippet = str(result)[:200]
             logger.info("Researcher | tool result snippet: %s…", snippet)
             messages.append(ToolMessage(content=str(result), tool_call_id=tc["id"]))
+
+    logger.warning("Researcher | hit max iterations (%d) for sub-question: %s", _MAX_ITERATIONS, sub_question)
+    last_content = response.content if isinstance(response.content, str) else str(response.content)
+    return {"sub_question": sub_question, "answer": last_content}
 
 
 def researcher_node(state: AgentState) -> AgentState:
